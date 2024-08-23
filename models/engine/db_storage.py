@@ -4,6 +4,8 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from models.base_model import BaseModel
 
 class DBStorage:
+
+
     """Handles storage of objects in a SQL database"""
 
     __engine = None
@@ -11,7 +13,8 @@ class DBStorage:
 
     def __init__(self):
         """Creates the engine and the session"""
-        self.__engine = create_engine('mysql+mysqldb://hbnb_dev:hbnb_dev_pwd@localhost/hbnb_dev_db')
+        self.__engine = create_engine\n
+        ('mysql+mysqldb://hbnb_dev:hbnb_dev_pwd@localhost/hbnb_dev_db')
         self.__session = scoped_session(sessionmaker(bind=self.__engine))
 
     def all(self, cls=None):

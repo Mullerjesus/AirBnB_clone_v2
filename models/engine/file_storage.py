@@ -3,6 +3,8 @@ import json
 from models.base_model import BaseModel
 
 class FileStorage:
+
+
     """Handles storage of objects in JSON format"""
 
     __file_path = "file.json"
@@ -20,7 +22,8 @@ class FileStorage:
     def save(self):
         """Saves the objects to a JSON file"""
         with open(self.__file_path, 'w') as f:
-            json.dump({key: obj.to_dict() for key, obj in self.__objects.items()}, f)
+         json.dump({key: obj.to_dict()\n
+            for key, obj in self.__objects.items()}, f)
 
     def reload(self):
         """Loads objects from the JSON file"""
