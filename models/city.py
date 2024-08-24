@@ -1,21 +1,11 @@
-#!/usr/bin/python3
-"""
-This module defines the City class which represents a city entity
-in the AirBnB clone project.
-"""
-from models.base_model import BaseModel
+from sqlalchemy import Column, String, ForeignKey
+from sqlalchemy.orm import relationship
+from models.base_model import BaseModel, Base
 
-class City(BaseModel):
-    """
-    The City class represents a city in the AirBnB clone.
-    It inherits from BaseModel.
-    """
+class City(BaseModel, Base):
+    __tablename__ = 'cities'
 
-    def __init__(self, state_id, name):
-        """Initializes a new City instance."""
-        self.state_id = state_id  # ID of the State to which this city belongs
-        self.name = name  # The name of the city
+    name = Column(String(128), nullable=False)
+    state_id = Column(String(60), ForeignKey('states.id'), nullable=False)
 
-    def __str__(self):
-        """Returns a string representation of the City instance."""
-        return f"[City] ({self.id}) {self.__dict__}"
+    places = relationship('Place', back_populates='city', cascade='all, delete-orphan')

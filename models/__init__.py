@@ -1,9 +1,11 @@
 #!/usr/bin/python3
-class State(BaseModel):
-    __tablename__ = 'states'
-    name = Column(String(128), nullable=False)
+"""
+This module initializes the models package.
+"""
+from models.base_model import BaseModel
+from models.state import State
+from models.city import City
+from models.engine.file_storage import FileStorage
 
-class City(BaseModel):
-    __tablename__ = 'cities'
-    state_id = Column(Integer, ForeignKey('states.id'), nullable=False)
-    name = Column(String(128), nullable=False)
+storage = FileStorage()
+storage.reload()
