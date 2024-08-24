@@ -4,9 +4,10 @@ Module base_model
 Defines the BaseModel class for the project.
 """
 
+
 class BaseModel:
     """
-    BaseModel class that defines all common attributes/methods for other classes.
+    BaseModel class defines all common attributes.
     """
 
     def __init__(self, *args, **kwargs):
