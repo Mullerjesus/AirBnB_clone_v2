@@ -1,3 +1,9 @@
 #!/usr/bin/python3  
-# models/__init__.py  
-"""This package contains all the data models for the AirBnB clone project."""
+class State(BaseModel):  
+    __tablename__ = 'states'  
+    name = Column(String(128), nullable=False)  
+
+class City(BaseModel):  
+    __tablename__ = 'cities'  
+    state_id = Column(Integer, ForeignKey('states.id'), nullable=False)  
+    name = Column(String(128), nullable=False)
