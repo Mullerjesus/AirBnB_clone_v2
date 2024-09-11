@@ -1,34 +1,17 @@
 #!/usr/bin/python3
 
-import uuid
-from datetime import datetime
+
+from models.base_model import BaseModel
+from models.base import Base
 
 
-class BaseModel:
-    """Base class for all models in the AirBnB project"""
+class City(BaseModel, Base):
+    """City class for managing cities in the database."""
 
-    def __init__(self, *args, **kwargs):
-        """Initializes a new instance of BaseModel"""
-        # Implementation of initialization
-        self.id = str(uuid.uuid4())
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+    __tablename__ = 'cities'
+    
+    # Define columns here
+    name = Column(String(128), nullable=False)
+    state_id = Column(String(60), ForeignKey('states.id'), nullable=False)
 
-    def save(self):
-        """Updates the updated_at attribute"""
-        self.updated_at = datetime.now()
-        # Save logic
-
-    def to_dict(self):
-        """Convert the instance to a dictionary"""
-        return {
-            'id': self.id,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
-            # Additional attributes
-        }
-
-
-class Base(BaseModel):
-    """Base for SQLAlchemy models"""
-    __abstract__ = True
+    state = relationship("State", back_populates="cities")
