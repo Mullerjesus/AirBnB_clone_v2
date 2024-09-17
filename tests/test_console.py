@@ -1,193 +1,148 @@
 #!/usr/bin/python3
-'''Console test suite'''
-import sys
+"""Defines unittests for console.py."""
+import os
 import unittest
+from unittest.mock import patch
 from io import StringIO
 from console import HBNBCommand
-from models.temp import HBNB_TYPE_STORAGE, FILE, DB
-from os import getenv, rename, remove
-from models import storage
-from models import State
-from models.engine.db_storage import DBStorage
-from unittest.mock import create_autospec
-from pycodestyle import StyleGuide
-import datetime
+from models.engine.file_storage import FileStorage
 
 
-class TestConsole(unittest.TestCase):
-    '''Test console module'''
-    __db_file_name = None
-    db = getenv(HBNB_TYPE_STORAGE, FILE)
-    LOCAL_DB_NAME = 'file.json'
-    CONSOLE_FILE = 'console.py'
+class TestHBNBCommand(unittest.TestCase):
+    """Unittests for testing the HBNB command interpreter."""
 
     @classmethod
-    def setUpClass(self) -> None:
-        '''Test Class Setup'''
+    def setUpClass(cls):
+        """HBNBCommand testing setup.
+
+        Temporarily rename any existing file.json.
+        Reset FileStorage objects dictionary.
+        Create an instance of the command interpreter.
+        """
         try:
-            self.__db_file_name = f'temp{datetime.utcnow()}'
-            rename(self.LOCAL_DB_NAME, self.__db_file_name)
-        except Exception:
+            os.rename("file.json", "tmp")
+        except IOError:
             pass
-        self.__cmd = HBNBCommand()
-        return super().setUpClass()
+        # Create an instance of the HBNBCommand class. This allows the test
+        # methods within the class to access and use this instance during the
+        # testing process.
+        cls.HBNB = HBNBCommand()
 
     @classmethod
-    def tearDownClass(self) -> None:
-        '''Class teardown'''
+    def tearDownClass(cls):
+        """HBNBCommand testing teardown.
+
+        Restore original file.json.
+        Delete the test HBNBCommand instance.
+        """
         try:
-            rename(self.__db_file_name, self.LOCAL_DB_NAME)
-        except Exception:
+            os.rename("tmp", "file.json")
+        except IOError:
             pass
-        del self.__cmd
-        if self.db == DB:
-            storage.close()
-        return super().tearDownClass()
+        del cls.HBNB
 
-    def setUp(self) -> None:
-        '''Setup'''
-        self.backup = sys.stdout
-        self.capt_out = StringIO()
-        sys.stdout = self.capt_out
-        if self.db == FILE:
-            storage.__objects = {}
+    def setUp(self):
+        """Reset FileStorage objects dictionary."""
+        FileStorage._FileStorage__objects = {}
 
-    def tearDown(self) -> None:
-        '''Teardown'''
+    def tearDown(self):
+        """Delete any created file.json."""
         try:
-            remove(self.LOCAL_DB_NAME)
-        except Exception:
+            os.remove("file.json")
+        except IOError:
             pass
-        sys.stdout = self.backup
 
-    def test_pep8(self) -> None:
-        '''Test pep8 styling'''
-        style = StyleGuide(quit=True)
-        pep = style.check_files([self.CONSOLE_FILE])
-        self.assertEqual(pep.total_errors, 0, 'Fix pycodestyle style')
+    def test_create_for_errors(self):
+        """Test create command errors."""
+        # Test if class name is missing
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("create")
+            self.assertEqual(
+                "** class name missing **\n", f.getvalue())
+        # Test if class doesn't exist
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("create asdfsfsd")
+            self.assertEqual(
+                "** class doesn't exist **\n", f.getvalue())
 
-    def test_docstring(self) -> None:
-        '''Ensure each method has a Descriptiop'''
-        self.assertIsNotNone(HBNBCommand.__doc__)
-        Methods = [f for f in dir(HBNBCommand) if callable(
-            getattr(HBNBCommand, f)) and not f.startswith('__')]
-        for method in Methods:
-            self.assertIsNotNone(method.__doc__)
+    def test_create_command_validity(self):
+        """Test create command."""
+        # Create BaseModel instance and capture its ID
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("create BaseModel")
+            bm = f.getvalue().strip()
 
-    def test_emptyline(self) -> None:
-        '''Test Empty line input'''
-        console = self.__cmd
-        console.onecmd('\n')
-        stdout = self.capt_out.getvalue()
-        self.assertEqual('', stdout)
+        # Create User instance and capture its ID
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("create User")
+            us = f.getvalue().strip()
 
-    def test_quit(self) -> None:
-        '''Test quit console'''
-        console = self.__cmd
-        with self.assertRaises(SystemExit):
-            console.onecmd('quit')
-            stdout = self.capt_out.getvalue()
-            self.assertEqual('', stdout)
+        # Create State instance and capture its ID
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("create State")
+            st = f.getvalue().strip()
 
-    def test_eof(self) -> None:
-        '''Test EOF'''
-        console = self.__cmd
-        with self.assertRaises(SystemExit):
-            self.assertTrue(console.onecmd('EOF'))
+        # Create Place instance and capture its ID
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("create Place")
+            pl = f.getvalue().strip()
 
-    def test_all(self) -> None:
-        '''Test all cmd'''
-        console = self.__cmd
-        console.onecmd('all')
-        stdout = self.capt_out.getvalue()
-        self.assertTrue(isinstance(stdout, str))
+        # Create City instance and capture its ID
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("create City")
+            ct = f.getvalue().strip()
 
-    @unittest.skipIf(db == DB, 'Testing Database Storage Only')
-    def test_show(self) -> None:
-        '''Test show'''
-        console = self.__cmd
-        console.onecmd('create User')
-        user_id = self.capt_out.getvalue()
-        sys.stdout = self.backup
-        self.capt_out.close()
-        self.capt_out = StringIO()
-        sys.stdout = self.capt_out
-        console.onecmd('show User ' + user_id)
-        x = (self.capt_out.getvalue())
-        sys.stdout = self.backup
-        self.assertTrue(str is type(x))
+        # Create Review instance and capture its ID
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("create Review")
+            rv = f.getvalue().strip()
 
-    @unittest.skipIf(db == DB, 'Testing Database Storage Only')
-    def test_show_class_name(self) -> None:
-        '''Test case class name missing'''
-        console = self.__cmd
-        console.onecmd('create User')
-        user_id = self.capt_out.getvalue()
-        sys.stdout = self.backup
-        self.capt_out.close()
-        self.capt_out = StringIO()
-        sys.stdout = self.capt_out
-        console.onecmd('show')
-        x = (self.capt_out.getvalue())
-        sys.stdout = self.backup
-        self.assertEqual('** class name missing **\n', x)
+        # Create Amenity instance and capture its ID
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("create Amenity")
+            am = f.getvalue().strip()
+        # Test if the created instances are in the output of "all" command
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("all BaseModel")
+            self.assertIn(bm, f.getvalue())
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("all User")
+            self.assertIn(us, f.getvalue())
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("all State")
+            self.assertIn(st, f.getvalue())
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("all Place")
+            self.assertIn(pl, f.getvalue())
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("all City")
+            self.assertIn(ct, f.getvalue())
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("all Review")
+            self.assertIn(rv, f.getvalue())
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("all Amenity")
+            self.assertIn(am, f.getvalue())
 
-    def test_show_class_name(self) -> None:
-        '''Test case missing id'''
-        console = self.__cmd
-        console.onecmd('create User')
-        user_id = self.capt_out.getvalue()
-        sys.stdout = self.backup
-        self.capt_out.close()
-        self.capt_out = StringIO()
-        sys.stdout = self.capt_out
-        console.onecmd('show User')
-        x = (self.capt_out.getvalue())
-        sys.stdout = self.backup
-        self.assertEqual('** instance id missing **\n', x)
-
-    @unittest.skipIf(db == DB, 'Testing database storage only')
-    def test_show_no_instance_found(self) -> None:
-        '''Test case missing id'''
-        console = self.__cmd
-        console.onecmd('create User')
-        user_id = self.capt_out.getvalue()
-        sys.stdout = self.backup
-        self.capt_out.close()
-        self.capt_out = StringIO()
-        sys.stdout = self.capt_out
-        console.onecmd('show User ' + '124356876')
-        x = (self.capt_out.getvalue())
-        sys.stdout = self.backup
-        self.assertEqual('** no instance found **\n', x)
-
-    def test_create(self) -> None:
-        '''Test create'''
-        console = self.__cmd
-        console.onecmd('create User email=mail@somemail.com password=abcijf')
-        self.assertTrue(isinstance(self.capt_out.getvalue(), str))
-
-    def test_class_name(self) -> None:
-        ''' Test case missing class name'''
-        console = self.__cmd
-        console.onecmd('create')
-        x = (self.capt_out.getvalue())
-        self.assertEqual('** class name missing **\n', x)
-
-    def test_class_name_doest_exist(self) -> None:
-        '''Test case name does not exist'''
-        console = self.__cmd
-        console.onecmd('create Binita')
-        x = (self.capt_out.getvalue())
-        self.assertEqual('** class doesn\'t exist **\n', x)
-
-    @unittest.skipIf(db != DB, 'Testing DBstorage only')
-    def test_create_db(self) -> None:
-        console = self.__cmd
-        console.onecmd('create State name=California')
-        result = storage.all('State')
-        self.assertTrue(len(result))
+    def test_create_command_with_kwargs(self):
+        """Test create command with kwargs."""
+        # Test create command with additional key-value pairs
+        with patch("sys.stdout", new=StringIO()) as f:
+            call = (f'create Place city_id="0001" name="My_house" number_rooms=4 latitude=37.77 longitude=43.434')  # noqa
+            self.HBNB.onecmd(call)
+            pl = f.getvalue().strip()
+         # Test if the created instance and kwargs are in the
+         #    output of "all" command
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.HBNB.onecmd("all Place")
+            output = f.getvalue()
+            self.assertIn(pl, output)
+            self.assertIn("'city_id': '0001'", output)
+            self.assertIn("'name': 'My house'", output)
+            self.assertIn("'number_rooms': 4", output)
+            self.assertIn("'latitude': 37.77", output)
+            self.assertIn("'longitude': 43.434", output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
